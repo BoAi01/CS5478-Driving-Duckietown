@@ -536,6 +536,7 @@ class Simulator(gym.Env):
 
         with open(self.map_file_path, 'r') as f:
             self.map_data = yaml.load(f, Loader=yaml.Loader)
+            print(f'map file path loaded: {self.map_file_path}')
 
         self._interpret_map(self.map_data)
 
@@ -1330,14 +1331,29 @@ class Simulator(gym.Env):
             )
 
         dist_to_stop = 1000.0
-        #print("number of objects = ", len(self.objects))
+        # print("number of objects = ", len(self.objects))
         for obj in self.objects:
             if obj.kind == "sign_stop":
                 dist_to_stop = min(dist_to_stop, ((pos[0] - obj.pos[0]) ** 2 + (pos[2] - obj.pos[2]) ** 2) ** 0.5)
 
+        print(f'reward: +1.0 * (speed) {speed:.3f} * (dot_dir) {lp.dot_dir:.3f} + -10 * (dist) {np.abs(lp.dist):.3f} + (col_penalty) 40 * {col_penalty} = {reward}')
+
         if self.speed > 0.15 and dist_to_stop < 0.3:
+            print(f'current speed {self.speed:.5f}, dist_to_stop {dist_to_stop:.5f}')
             reward = -100.0
+
         return reward
+
+    def is_there_stop_sign(self, pos):
+        dist_to_stop = float('inf')
+
+        for obj in self.objects:
+            if obj.kind == "sign_stop":
+                dist_to_stop = min(dist_to_stop, ((pos[0] - obj.pos[0]) ** 2 + (pos[2] - obj.pos[2]) ** 2) ** 0.5)
+
+        safe_ratio = 1.05
+
+        return dist_to_stop < 0.3 * safe_ratio
 
     def step(self, action: np.ndarray):
         action = np.clip(action, -1, 1)
