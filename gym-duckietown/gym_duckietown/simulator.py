@@ -1022,7 +1022,6 @@ class Simulator(gym.Env):
         curve_headings = curves[:, -1, :] - curves[:, 0, :]
         curve_headings = curve_headings / np.linalg.norm(curve_headings).reshape(1, -1)
         dir_vec = get_dir_vec(angle)
-
         dot_prods = np.dot(curve_headings, dir_vec)
 
         # Closest curve = one with largest dotprod
@@ -1243,6 +1242,28 @@ class Simulator(gym.Env):
             else:
                 obj.step(delta_time)
 
+    def pred_physics(self, action, pos=None, angle=None, robot_speed=None, delta_time=None):
+        delta_time = self.delta_time if delta_time is None else delta_time
+        pos = self.cur_pos if pos is None else pos
+        angle = self.cur_angle if angle is None else angle
+        robot_speed = self.robot_speed if robot_speed is None else robot_speed
+
+        wheelVels = action * robot_speed * 1
+        prev_pos = pos
+
+        # Update the robot's position
+        cur_pos, cur_angle = _update_pos(pos,
+                                         angle,
+                                         self.wheel_dist,
+                                         wheelVels=wheelVels,
+                                         deltaTime=delta_time)
+
+        # Compute the robot's speed
+        delta_pos = cur_pos - prev_pos
+        speed = np.linalg.norm(delta_pos) / delta_time
+
+        return cur_pos, cur_angle, speed
+
     def get_agent_info(self):
         info = {}
         pos = self.cur_pos
@@ -1336,11 +1357,13 @@ class Simulator(gym.Env):
             if obj.kind == "sign_stop":
                 dist_to_stop = min(dist_to_stop, ((pos[0] - obj.pos[0]) ** 2 + (pos[2] - obj.pos[2]) ** 2) ** 0.5)
 
-        print(f'reward: +1.0 * (speed) {speed:.3f} * (dot_dir) {lp.dot_dir:.3f} + -10 * (dist) {np.abs(lp.dist):.3f} + (col_penalty) 40 * {col_penalty} = {reward}')
-
         if self.speed > 0.15 and dist_to_stop < 0.3:
-            print(f'current speed {self.speed:.5f}, dist_to_stop {dist_to_stop:.5f}')
+            # print(f'current speed {self.speed:.5f}, dist_to_stop {dist_to_stop:.5f}')
             reward = -100.0
+
+        if reward < 0:
+            print(
+                f'reward: +1.0 * (speed) {speed:.3f} * (dot_dir) {lp.dot_dir:.3f} + -10 * (dist) {np.abs(lp.dist):.3f} + (col_penalty) 40 * {col_penalty} = {reward}')
 
         return reward
 
@@ -1351,7 +1374,7 @@ class Simulator(gym.Env):
             if obj.kind == "sign_stop":
                 dist_to_stop = min(dist_to_stop, ((pos[0] - obj.pos[0]) ** 2 + (pos[2] - obj.pos[2]) ** 2) ** 0.5)
 
-        safe_ratio = 1.05
+        safe_ratio = 1.10
 
         return dist_to_stop < 0.3 * safe_ratio
 

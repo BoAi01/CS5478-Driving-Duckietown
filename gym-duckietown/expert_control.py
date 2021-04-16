@@ -128,7 +128,7 @@ def update(dt):
     obs, reward, done, info = env.step(action)
     avg_reward.update(reward)
     print(f'step_count = {env.unwrapped.step_count}, reward {reward:.3f}, avg reward {avg_reward.avg:.3f}, '
-          f'speed {env.speed:.3f}')
+          f'speed {env.speed:.3f}, steering {action[-1]:.3f}')
     # print('step_count = %s, reward = %.3f' % (env.unwrapped.step_count, reward))
 
     if key_handler[key.RETURN]:
