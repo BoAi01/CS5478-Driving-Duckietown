@@ -1246,7 +1246,7 @@ class Simulator(gym.Env):
         delta_time = self.delta_time if delta_time is None else delta_time
         pos = self.cur_pos if pos is None else pos
         angle = self.cur_angle if angle is None else angle
-        robot_speed = self.robot_speed if robot_speed is None else robot_speed
+        robot_speed = self.robot_speed
 
         wheelVels = action * robot_speed * 1
         prev_pos = pos
@@ -1361,9 +1361,9 @@ class Simulator(gym.Env):
             # print(f'current speed {self.speed:.5f}, dist_to_stop {dist_to_stop:.5f}')
             reward = -100.0
 
-        if reward < 0:
-            print(
-                f'reward: +1.0 * (speed) {speed:.3f} * (dot_dir) {lp.dot_dir:.3f} + -10 * (dist) {np.abs(lp.dist):.3f} + (col_penalty) 40 * {col_penalty} = {reward}')
+        if reward < -0.1:
+            print(f'reward: +1.0 * (speed) {speed:.3f} * (dot_dir) {lp.dot_dir:.3f} '
+                  f'+ -10 * (dist) {np.abs(lp.dist):.3f} + (col_penalty) 40 * {col_penalty} = {reward}')
 
         return reward
 
@@ -1782,6 +1782,7 @@ def _update_pos(pos, angle, wheel_dist, wheelVels, deltaTime):
     # Rotate the robot's position around the center of rotation
     r_vec = get_right_vec(angle)
     px, py, pz = pos
+
     cx = px + r * r_vec[0]
     cz = pz + r * r_vec[2]
     npx, npz = rotate_point(px, pz, cx, cz, rotAngle)
