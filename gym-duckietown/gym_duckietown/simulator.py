@@ -1,6 +1,7 @@
 # coding=utf-8
 from __future__ import division
 
+import math
 from collections import namedtuple
 from ctypes import POINTER
 from dataclasses import dataclass
@@ -1003,7 +1004,7 @@ class Simulator(gym.Env):
         z = math.cos(angle)
         return np.array([x, 0, z])
 
-    def closest_curve_point(self, pos, angle=None):
+    def closest_curve_point(self, pos, angle=None, return_atan=False, return_heading=False):
         """
             Get the closest point on the curve to a given point
             Also returns the tangent at that point.
@@ -1014,8 +1015,10 @@ class Simulator(gym.Env):
         i, j = self.get_grid_coords(pos)
         tile = self._get_tile(i, j)
 
-        if tile is None or not tile['drivable']:
+        if (tile is None or not tile['drivable']) and not return_atan:
             return None, None
+        elif tile is None or not tile['drivable']:
+            return None, None, None
 
         # Find curve with largest dotproduct with heading
         curves = self._get_tile(i, j)['curves']
@@ -1031,6 +1034,14 @@ class Simulator(gym.Env):
         t = bezier_closest(cps, pos)
         point = bezier_point(cps, t)
         tangent = bezier_tangent(cps, t)
+
+        """if return_heading:
+            heading = get_angle_from_vec(curve_headings[np.argmax(dot_prods)])
+            return point, tangent, heading"""
+
+        if return_atan:
+            atan = get_angle_from_vec(tangent)
+            return point, tangent, atan
 
         return point, tangent
 
@@ -1070,6 +1081,7 @@ class Simulator(gym.Env):
             angle_rad *= -1
 
         angle_deg = np.rad2deg(angle_rad)
+        # return signedDist, dotDir, angle_deg
         # return signedDist, dotDir, angle_deg
 
         return LanePosition(dist=signedDist, dot_dir=dotDir, angle_deg=angle_deg,
@@ -1242,7 +1254,7 @@ class Simulator(gym.Env):
             else:
                 obj.step(delta_time)
 
-    def pred_physics(self, action, pos=None, angle=None, robot_speed=None, delta_time=None):
+    def pred_physics(self, action, pos=None, angle=None, delta_time=None):
         delta_time = self.delta_time if delta_time is None else delta_time
         pos = self.cur_pos if pos is None else pos
         angle = self.cur_angle if angle is None else angle
@@ -1358,10 +1370,9 @@ class Simulator(gym.Env):
                 dist_to_stop = min(dist_to_stop, ((pos[0] - obj.pos[0]) ** 2 + (pos[2] - obj.pos[2]) ** 2) ** 0.5)
 
         if self.speed > 0.15 and dist_to_stop < 0.3:
-            # print(f'current speed {self.speed:.5f}, dist_to_stop {dist_to_stop:.5f}')
             reward = -100.0
 
-        if reward < -0.1:
+        if reward < -1:
             print(f'reward: +1.0 * (speed) {speed:.3f} * (dot_dir) {lp.dot_dir:.3f} '
                   f'+ -10 * (dist) {np.abs(lp.dist):.3f} + (col_penalty) 40 * {col_penalty} = {reward}')
 
@@ -1733,6 +1744,19 @@ class Simulator(gym.Env):
 
         # Force execution of queued commands
         gl.glFlush()
+
+
+def get_angle_from_vec(dir_vec):
+    """
+    Get the angle value from a direction vector (x, 0, z)
+    """
+    x, _, z = dir_vec
+    theta = math.acos(x)
+
+    if z < 0:
+        theta = 4 * math.pi - theta
+
+    return theta
 
 
 def get_dir_vec(cur_angle):
