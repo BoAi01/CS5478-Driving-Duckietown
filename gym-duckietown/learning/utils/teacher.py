@@ -69,7 +69,7 @@ class PurePursuitExpert:
     SPATIAL_RESOLUTION = 0.01       # 0.004
     ANGLE_RESOLUTION = 0.1 * math.pi
     SAFETY_REWARD_THRESHOLD = -100
-    SAFETY_FACTOR = 2.0
+    SAFETY_FACTOR = 1.5
     NEIGHBOUR_HALF_SIZE = 0.5
     def __init__(self, env, ref_velocity=REF_VELOCITY, position_threshold=POSITION_THRESHOLD,
                  following_distance=FOLLOWING_DISTANCE, max_iterations=1000):
