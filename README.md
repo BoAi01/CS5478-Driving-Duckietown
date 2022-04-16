@@ -1,5 +1,10 @@
 # CS4278-5478-Project-Materials
 
+## Introduction
+This is the course project of a graduate-level robotics module CS4278/CS5478 Intelligent Robots: Algorithms and Systems (AY20/21).
+In this repo, we implemented a imitation learning agent for the duckietown driving environment. 
+An alternative approach is to use reinforcement learning.
+Our submission received top scores of the cohort. 
 
 ## Evaluation  
 We will evaluate your system on 5 [maps](./maps/). Copy the maps into the map folder of your gym-duckietown environment, e.g.,
